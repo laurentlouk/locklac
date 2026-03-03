@@ -33,7 +33,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "lock.shield", accessibilityDescription: "lockLac")
+            button.image = Self.makeOnigiriMenuBarIcon()
         }
 
         let menu = NSMenu()
@@ -248,5 +248,59 @@ extension AppDelegate: NSMenuDelegate {
 extension AppDelegate: OverlayWindowDelegate {
     public func overlayDidSubmitPassword(_ password: String) {
         _ = lockController.attemptUnlock(password: password)
+    }
+}
+
+// MARK: - Menu Bar Icon
+
+private extension AppDelegate {
+    static func makeOnigiriMenuBarIcon() -> NSImage {
+        let grid: [[UInt8]] = [
+            [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+            [0,0,0,0,1,1,2,2,2,2,1,1,0,0,0,0],
+            [0,0,0,1,2,2,4,4,2,2,2,2,1,0,0,0],
+            [0,0,1,2,2,4,4,2,2,2,2,2,2,1,0,0],
+            [0,1,2,2,2,4,2,2,2,2,2,2,2,2,1,0],
+            [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,2,2,2,1,1,1,1,1,1,2,2,2,2,1],
+            [1,2,2,2,1,3,3,3,3,3,3,1,2,2,2,1],
+            [0,1,2,2,1,3,3,3,3,3,3,1,2,2,1,0],
+            [0,1,2,2,1,3,3,3,3,3,3,1,2,2,1,0],
+            [0,0,1,2,1,3,3,3,3,3,3,1,2,1,0,0],
+            [0,0,0,1,1,3,3,3,3,3,3,1,1,0,0,0],
+            [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+            [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+        ]
+
+        let palette: [UInt8: (r: CGFloat, g: CGFloat, b: CGFloat)] = [
+            1: (0.15, 0.12, 0.10),
+            2: (0.95, 0.93, 0.88),
+            3: (0.10, 0.20, 0.12),
+            4: (1.00, 1.00, 0.98),
+        ]
+
+        let size: CGFloat = 18
+        let image = NSImage(size: NSSize(width: size, height: size))
+        image.isTemplate = false
+
+        image.lockFocus()
+        let rows = grid.count
+        let cols = grid[0].count
+        let px = size / CGFloat(max(rows, cols))
+
+        for row in 0..<rows {
+            for col in 0..<cols {
+                let value = grid[row][col]
+                guard value != 0, let color = palette[value] else { continue }
+                NSColor(red: color.r, green: color.g, blue: color.b, alpha: 1.0).setFill()
+                let y = CGFloat(rows - 1 - row) * px
+                NSRect(x: CGFloat(col) * px, y: y, width: px + 0.5, height: px + 0.5).fill()
+            }
+        }
+        image.unlockFocus()
+
+        return image
     }
 }
