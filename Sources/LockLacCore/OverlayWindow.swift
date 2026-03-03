@@ -203,36 +203,39 @@ private final class KeyableWindow: NSWindow {
     }
 }
 
-// MARK: - Pixel Art Food Ball
+// MARK: - Pixel Art Loc Lac
 
 private final class PixelArtView: NSView {
-    // 16x16 pixel art: onigiri rice ball
-    // 0 = transparent, 1 = dark outline, 2 = white rice, 3 = nori (seaweed), 4 = highlight
+    // 16x16 pixel art: loc lac beef on a plate
+    // 0 = transparent, 1 = dark outline, 2 = beef brown, 3 = beef seared,
+    // 4 = plate cream, 5 = lettuce green, 6 = lime green
     private static let grid: [[UInt8]] = [
-        [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
-        [0,0,0,0,1,1,2,2,2,2,1,1,0,0,0,0],
-        [0,0,0,1,2,2,4,4,2,2,2,2,1,0,0,0],
-        [0,0,1,2,2,4,4,2,2,2,2,2,2,1,0,0],
-        [0,1,2,2,2,4,2,2,2,2,2,2,2,2,1,0],
-        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-        [1,2,2,2,2,1,1,1,1,1,1,2,2,2,2,1],
-        [1,2,2,2,1,3,3,3,3,3,3,1,2,2,2,1],
-        [0,1,2,2,1,3,3,3,3,3,3,1,2,2,1,0],
-        [0,1,2,2,1,3,3,3,3,3,3,1,2,2,1,0],
-        [0,0,1,2,1,3,3,3,3,3,3,1,2,1,0,0],
-        [0,0,0,1,1,3,3,3,3,3,3,1,1,0,0,0],
-        [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+        [0,0,0,1,1,4,4,4,4,4,4,1,1,0,0,0],
+        [0,0,1,4,4,4,4,4,4,4,4,4,4,1,0,0],
+        [0,1,4,4,5,5,5,5,5,5,5,5,4,4,1,0],
+        [0,1,4,5,1,1,1,1,1,1,1,1,5,4,1,0],
+        [1,4,5,1,2,2,1,3,3,1,2,2,1,5,4,1],
+        [1,4,5,1,2,3,1,3,2,1,2,3,1,5,4,1],
+        [1,4,4,1,1,1,1,1,1,1,1,1,1,4,4,1],
+        [1,4,4,1,3,3,1,2,2,1,3,3,1,4,4,1],
+        [1,4,5,1,3,2,1,2,3,1,3,2,1,5,4,1],
+        [0,1,4,5,1,1,1,1,1,1,1,1,5,4,1,0],
+        [0,1,4,4,5,5,5,5,5,5,5,5,4,4,1,0],
+        [0,0,1,4,4,4,4,4,4,6,6,4,4,1,0,0],
+        [0,0,0,1,4,4,4,4,6,6,6,4,1,0,0,0],
+        [0,0,0,0,1,1,4,4,4,6,1,1,0,0,0,0],
         [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
     ]
 
     private static let palette: [UInt8: NSColor] = [
         0: .clear,
         1: NSColor(red: 0.15, green: 0.12, blue: 0.10, alpha: 1.0),  // dark outline
-        2: NSColor(red: 0.95, green: 0.93, blue: 0.88, alpha: 1.0),  // white rice
-        3: NSColor(red: 0.10, green: 0.20, blue: 0.12, alpha: 1.0),  // nori seaweed
-        4: NSColor(red: 1.00, green: 1.00, blue: 0.98, alpha: 1.0),  // highlight
+        2: NSColor(red: 0.63, green: 0.32, blue: 0.18, alpha: 1.0),  // beef brown
+        3: NSColor(red: 0.42, green: 0.20, blue: 0.06, alpha: 1.0),  // beef seared
+        4: NSColor(red: 0.95, green: 0.93, blue: 0.89, alpha: 1.0),  // plate cream
+        5: NSColor(red: 0.36, green: 0.55, blue: 0.24, alpha: 1.0),  // lettuce green
+        6: NSColor(red: 0.64, green: 0.79, blue: 0.23, alpha: 1.0),  // lime green
     ]
 
     override func draw(_ dirtyRect: NSRect) {

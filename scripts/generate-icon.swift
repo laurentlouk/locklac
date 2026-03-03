@@ -3,34 +3,37 @@
 import AppKit
 import CoreGraphics
 
-// Generate a lockLac app icon: dark rounded-rect background with pixel art onigiri
+// Generate a lockLac app icon: dark rounded-rect background with pixel art loc lac beef
 
-// 16x16 pixel art: onigiri rice ball (same as lock screen)
-// 0 = transparent, 1 = dark outline, 2 = white rice, 3 = nori (seaweed), 4 = highlight
-let onigiriGrid: [[UInt8]] = [
-    [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
-    [0,0,0,0,1,1,2,2,2,2,1,1,0,0,0,0],
-    [0,0,0,1,2,2,4,4,2,2,2,2,1,0,0,0],
-    [0,0,1,2,2,4,4,2,2,2,2,2,2,1,0,0],
-    [0,1,2,2,2,4,2,2,2,2,2,2,2,2,1,0],
-    [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-    [1,2,2,2,2,1,1,1,1,1,1,2,2,2,2,1],
-    [1,2,2,2,1,3,3,3,3,3,3,1,2,2,2,1],
-    [0,1,2,2,1,3,3,3,3,3,3,1,2,2,1,0],
-    [0,1,2,2,1,3,3,3,3,3,3,1,2,2,1,0],
-    [0,0,1,2,1,3,3,3,3,3,3,1,2,1,0,0],
-    [0,0,0,1,1,3,3,3,3,3,3,1,1,0,0,0],
-    [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+// 16x16 pixel art: loc lac beef on a plate (same as lock screen)
+// 0 = transparent, 1 = dark outline, 2 = beef brown, 3 = beef seared,
+// 4 = plate cream, 5 = lettuce green, 6 = lime green
+let locLacGrid: [[UInt8]] = [
+    [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+    [0,0,0,1,1,4,4,4,4,4,4,1,1,0,0,0],
+    [0,0,1,4,4,4,4,4,4,4,4,4,4,1,0,0],
+    [0,1,4,4,5,5,5,5,5,5,5,5,4,4,1,0],
+    [0,1,4,5,1,1,1,1,1,1,1,1,5,4,1,0],
+    [1,4,5,1,2,2,1,3,3,1,2,2,1,5,4,1],
+    [1,4,5,1,2,3,1,3,2,1,2,3,1,5,4,1],
+    [1,4,4,1,1,1,1,1,1,1,1,1,1,4,4,1],
+    [1,4,4,1,3,3,1,2,2,1,3,3,1,4,4,1],
+    [1,4,5,1,3,2,1,2,3,1,3,2,1,5,4,1],
+    [0,1,4,5,1,1,1,1,1,1,1,1,5,4,1,0],
+    [0,1,4,4,5,5,5,5,5,5,5,5,4,4,1,0],
+    [0,0,1,4,4,4,4,4,4,6,6,4,4,1,0,0],
+    [0,0,0,1,4,4,4,4,6,6,6,4,1,0,0,0],
+    [0,0,0,0,1,1,4,4,4,6,1,1,0,0,0,0],
     [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
 ]
 
-let onigiriPalette: [UInt8: (r: CGFloat, g: CGFloat, b: CGFloat)] = [
+let locLacPalette: [UInt8: (r: CGFloat, g: CGFloat, b: CGFloat)] = [
     1: (0.15, 0.12, 0.10),  // dark outline
-    2: (0.95, 0.93, 0.88),  // white rice
-    3: (0.10, 0.20, 0.12),  // nori seaweed
-    4: (1.00, 1.00, 0.98),  // highlight
+    2: (0.63, 0.32, 0.18),  // beef brown
+    3: (0.42, 0.20, 0.06),  // beef seared
+    4: (0.95, 0.93, 0.89),  // plate cream
+    5: (0.36, 0.55, 0.24),  // lettuce green
+    6: (0.64, 0.79, 0.23),  // lime green
 ]
 
 func renderIcon(pixelSize: Int) -> NSImage {
@@ -73,15 +76,15 @@ func renderIcon(pixelSize: Int) -> NSImage {
     ctx.setLineWidth(s * 0.008)
     ctx.strokePath()
 
-    // --- Draw pixel art onigiri ---
+    // --- Draw pixel art loc lac ---
     ctx.saveGState()
 
     // Clip to rounded rect so pixels don't bleed outside
     ctx.addPath(bgPath)
     ctx.clip()
 
-    let rows = onigiriGrid.count
-    let cols = onigiriGrid[0].count
+    let rows = locLacGrid.count
+    let cols = locLacGrid[0].count
     let padding = s * 0.12
     let availableSize = s - padding * 2
     let pixelSize_ = availableSize / CGFloat(max(rows, cols))
@@ -93,8 +96,8 @@ func renderIcon(pixelSize: Int) -> NSImage {
 
     for row in 0..<rows {
         for col in 0..<cols {
-            let value = onigiriGrid[row][col]
-            guard value != 0, let color = onigiriPalette[value] else { continue }
+            let value = locLacGrid[row][col]
+            guard value != 0, let color = locLacPalette[value] else { continue }
             ctx.setFillColor(CGColor(red: color.r, green: color.g, blue: color.b, alpha: 1.0))
             // Flip Y: row 0 is top of the grid, but CoreGraphics Y goes up
             let x = originX + CGFloat(col) * pixelSize_
