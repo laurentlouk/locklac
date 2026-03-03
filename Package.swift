@@ -14,7 +14,8 @@ let package = Package(
         ),
         .executableTarget(
             name: "locklac",
-            dependencies: ["LockLacCore"]
+            dependencies: ["LockLacCore"],
+            exclude: ["Info.plist"]
         ),
         .testTarget(
             name: "LockLacCoreTests",
