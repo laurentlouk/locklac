@@ -1,3 +1,4 @@
+import AppKit
 import ApplicationServices
 import CoreGraphics
 import Foundation
@@ -9,6 +10,9 @@ public final class EventTap {
 
     /// When false, all keyboard events are suppressed (password field unfocused).
     public var keyboardPassthrough = true
+
+    /// When true, mouse is confined to the primary screen bounds.
+    public var confineMouseToPrimaryScreen = false
 
     /// Callback invoked with keyboard events (keyDown) while locked.
     /// Return true to allow the event through, false to suppress.
@@ -84,10 +88,31 @@ public final class EventTap {
         // The overlay covers the entire screen, so clicks can only land on it.
         if type == .leftMouseDown || type == .leftMouseUp
             || type == .mouseMoved || type == .leftMouseDragged {
+            if confineMouseToPrimaryScreen {
+                confineMouseIfNeeded(event: event)
+            }
             return Unmanaged.passRetained(event)
         }
 
         // Suppress everything else (right-click, scroll, gestures, etc.)
         return nil
+    }
+
+    private func confineMouseIfNeeded(event: CGEvent) {
+        guard let screen = NSScreen.main else { return }
+        // NSScreen uses bottom-left origin; CGEvent uses top-left origin.
+        // Convert screen frame to CG coordinates.
+        let frame = screen.frame
+        let screenHeight = NSScreen.screens.map { $0.frame.maxY }.max() ?? frame.height
+        let cgMinY = screenHeight - frame.maxY
+        let cgMaxY = screenHeight - frame.minY
+
+        let location = event.location
+        let clampedX = min(max(location.x, frame.minX), frame.maxX - 1)
+        let clampedY = min(max(location.y, cgMinY), cgMaxY - 1)
+
+        if clampedX != location.x || clampedY != location.y {
+            CGWarpMouseCursorPosition(CGPoint(x: clampedX, y: clampedY))
+        }
     }
 }

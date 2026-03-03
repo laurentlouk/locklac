@@ -164,6 +164,7 @@ extension AppDelegate: LockControllerDelegate {
         }
         overlayController.show()
 
+        eventTap.confineMouseToPrimaryScreen = true
         let started = eventTap.start()
         if !started {
             lockController.forceUnlock()
@@ -221,6 +222,7 @@ extension AppDelegate: LockControllerDelegate {
 
     public func lockControllerDidUnlock() {
         cancelBiometricAuth()
+        eventTap.confineMouseToPrimaryScreen = false
         eventTap.stop()
         overlayController.hide()
         socketServer.stop()
