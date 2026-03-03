@@ -85,11 +85,9 @@ public final class OverlayWindowController {
         blurView.autoresizingMask = [.width, .height]
         contentView.addSubview(blurView)
 
-        let tintView = NSView(frame: screen.frame)
-        tintView.wantsLayer = true
-        tintView.layer?.backgroundColor = NSColor(white: 0, alpha: 0.3).cgColor
-        tintView.autoresizingMask = [.width, .height]
-        contentView.addSubview(tintView)
+        let gradientView = AnimatedGradientView(frame: screen.frame)
+        gradientView.autoresizingMask = [.width, .height]
+        contentView.addSubview(gradientView)
 
         if screen == NSScreen.main {
             addPasswordUI(to: contentView, frame: screen.frame)
@@ -200,6 +198,83 @@ private final class KeyableWindow: NSWindow {
         let isFocused = (passwordField as? NSTextField)?.currentEditor() != nil
         onFirstResponderChanged?(isFocused)
         return result
+    }
+}
+
+// MARK: - Animated Gradient
+
+private final class AnimatedGradientView: NSView {
+    private let gradientLayer = CAGradientLayer()
+
+    private static let colorSets: [[CGColor]] = {
+        let palettes: [[(r: CGFloat, g: CGFloat, b: CGFloat)]] = [
+            [(0.08, 0.02, 0.18), (0.02, 0.06, 0.22), (0.02, 0.14, 0.18)],
+            [(0.02, 0.06, 0.22), (0.02, 0.14, 0.18), (0.14, 0.02, 0.16)],
+            [(0.02, 0.14, 0.18), (0.14, 0.02, 0.16), (0.04, 0.02, 0.22)],
+            [(0.14, 0.02, 0.16), (0.04, 0.02, 0.22), (0.08, 0.02, 0.18)],
+        ]
+        return palettes.map { palette in
+            palette.map { NSColor(red: $0.r, green: $0.g, blue: $0.b, alpha: 0.85).cgColor }
+        }
+    }()
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    override func layout() {
+        super.layout()
+        gradientLayer.frame = bounds
+    }
+
+    private func setup() {
+        wantsLayer = true
+        gradientLayer.frame = bounds
+        gradientLayer.colors = Self.colorSets[0]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        layer?.addSublayer(gradientLayer)
+        animateColors()
+        animateDirection()
+    }
+
+    private func animateColors() {
+        let animation = CAKeyframeAnimation(keyPath: "colors")
+        animation.values = Self.colorSets + [Self.colorSets[0]]
+        animation.duration = 12
+        animation.repeatCount = .infinity
+        animation.calculationMode = .linear
+        gradientLayer.add(animation, forKey: "colorCycle")
+    }
+
+    private func animateDirection() {
+        let startAnim = CAKeyframeAnimation(keyPath: "startPoint")
+        startAnim.values = [
+            CGPoint(x: 0, y: 0), CGPoint(x: 1, y: 0),
+            CGPoint(x: 1, y: 1), CGPoint(x: 0, y: 1),
+            CGPoint(x: 0, y: 0),
+        ]
+        startAnim.duration = 18
+        startAnim.repeatCount = .infinity
+        startAnim.calculationMode = .linear
+        gradientLayer.add(startAnim, forKey: "startRotation")
+
+        let endAnim = CAKeyframeAnimation(keyPath: "endPoint")
+        endAnim.values = [
+            CGPoint(x: 1, y: 1), CGPoint(x: 0, y: 1),
+            CGPoint(x: 0, y: 0), CGPoint(x: 1, y: 0),
+            CGPoint(x: 1, y: 1),
+        ]
+        endAnim.duration = 18
+        endAnim.repeatCount = .infinity
+        endAnim.calculationMode = .linear
+        gradientLayer.add(endAnim, forKey: "endRotation")
     }
 }
 

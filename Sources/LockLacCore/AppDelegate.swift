@@ -1,4 +1,5 @@
 import AppKit
+import IOKit.pwr_mgt
 import LocalAuthentication
 
 public final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -9,6 +10,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private let socketServer = SocketServer()
     private let eventTap = EventTap()
     private var biometricContext: LAContext?
+    private var sleepAssertionID: IOPMAssertionID = 0
     public var debugMode = false
 
     public override init() {
@@ -150,8 +152,25 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     public func applicationWillTerminate(_ notification: Notification) {
+        allowSleep()
         eventTap.stop()
         socketServer.stop()
+    }
+
+    private func preventSleep() {
+        let reason = "lockLac is locked" as CFString
+        IOPMAssertionCreateWithName(
+            kIOPMAssertPreventUserIdleDisplaySleep as CFString,
+            IOPMAssertionLevel(kIOPMAssertionLevelOn),
+            reason,
+            &sleepAssertionID
+        )
+    }
+
+    private func allowSleep() {
+        guard sleepAssertionID != 0 else { return }
+        IOPMAssertionRelease(sleepAssertionID)
+        sleepAssertionID = 0
     }
 }
 
@@ -163,6 +182,7 @@ extension AppDelegate: LockControllerDelegate {
             self?.eventTap.keyboardPassthrough = focused
         }
         overlayController.show()
+        preventSleep()
 
         eventTap.confineMouseToPrimaryScreen = true
         let started = eventTap.start()
@@ -232,6 +252,7 @@ extension AppDelegate: LockControllerDelegate {
 
     public func lockControllerDidUnlock() {
         cancelBiometricAuth()
+        allowSleep()
         eventTap.confineMouseToPrimaryScreen = false
         eventTap.stop()
         overlayController.hide()
