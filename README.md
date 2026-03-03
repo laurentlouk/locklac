@@ -4,12 +4,14 @@ A macOS menu bar app that locks your screen with a fullscreen dark overlay while
 
 ## Install
 
-### Homebrew (recommended)
+### Homebrew Cask (recommended)
 
 ```sh
 brew tap laurentlouk/locklac
-brew install locklac
+brew install --cask locklac
 ```
+
+This installs lockLac.app to `/Applications` and symlinks the `locklac` CLI to your PATH.
 
 ### Build from source
 
@@ -20,6 +22,9 @@ git clone https://github.com/laurentlouk/locklac.git
 cd locklac
 swift build -c release
 # Binary is at .build/release/locklac
+# Or build the .app bundle:
+bash scripts/package-app.sh
+cp -R lockLac.app /Applications/
 ```
 
 ## Requirements

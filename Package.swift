@@ -10,6 +10,7 @@ let package = Package(
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("CoreGraphics"),
+                .linkedFramework("ServiceManagement"),
             ]
         ),
         .executableTarget(

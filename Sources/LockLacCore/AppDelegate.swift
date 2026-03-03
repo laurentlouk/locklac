@@ -37,12 +37,26 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
+        menu.delegate = self
         menu.addItem(NSMenuItem(title: "Lock", action: #selector(lockAction), keyEquivalent: "l"))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Change Password", action: #selector(changePasswordAction), keyEquivalent: ""))
+
+        let launchItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        launchItem.tag = 100
+        menu.addItem(launchItem)
+
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quitAction), keyEquivalent: "q"))
         statusItem.menu = menu
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        do {
+            try LaunchAtLogin.toggle()
+        } catch {
+            showErrorAlert("Failed to update launch at login: \(error.localizedDescription)")
+        }
     }
 
     @objc public func lockAction() {
@@ -216,6 +230,16 @@ extension AppDelegate: LockControllerDelegate {
         overlayController.showError("Incorrect password")
         overlayController.clearPasswordField()
         overlayController.refocusPasswordField()
+    }
+}
+
+// MARK: - NSMenuDelegate
+
+extension AppDelegate: NSMenuDelegate {
+    public func menuWillOpen(_ menu: NSMenu) {
+        if let launchItem = menu.item(withTag: 100) {
+            launchItem.state = LaunchAtLogin.isEnabled ? .on : .off
+        }
     }
 }
 
