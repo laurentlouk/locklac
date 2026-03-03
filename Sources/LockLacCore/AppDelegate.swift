@@ -202,15 +202,25 @@ extension AppDelegate: LockControllerDelegate {
 
     private func attemptBiometricUnlock() {
         guard lockController.state == .locked else { return }
-        biometricContext = BiometricAuth.authenticate(reason: "Unlock lockLac") { [weak self] success in
+        cancelBiometricAuth()
+        biometricContext = BiometricAuth.authenticate(reason: "Unlock lockLac") { [weak self] result in
             guard let self, self.lockController.state == .locked else { return }
-            if success {
+            switch result {
+            case .success:
                 self.lockController.forceUnlock()
-            } else {
-                // Re-prompt Touch ID after a short delay so it's always available
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            case .cancelled:
+                // User dismissed — retry after a longer delay in case they want to type instead
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
                     self?.attemptBiometricUnlock()
                 }
+            case .failed:
+                // Generic failure — retry after a short delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                    self?.attemptBiometricUnlock()
+                }
+            case .lockedOut, .notAvailable:
+                // Don't retry — biometric is locked out or unavailable
+                break
             }
         }
     }
