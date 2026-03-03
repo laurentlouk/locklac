@@ -3,7 +3,35 @@
 import AppKit
 import CoreGraphics
 
-// Generate a lockLac app icon: dark rounded-rect background with a white lock shield drawn via Core Graphics
+// Generate a lockLac app icon: dark rounded-rect background with pixel art onigiri
+
+// 16x16 pixel art: onigiri rice ball (same as lock screen)
+// 0 = transparent, 1 = dark outline, 2 = white rice, 3 = nori (seaweed), 4 = highlight
+let onigiriGrid: [[UInt8]] = [
+    [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+    [0,0,0,0,1,1,2,2,2,2,1,1,0,0,0,0],
+    [0,0,0,1,2,2,4,4,2,2,2,2,1,0,0,0],
+    [0,0,1,2,2,4,4,2,2,2,2,2,2,1,0,0],
+    [0,1,2,2,2,4,2,2,2,2,2,2,2,2,1,0],
+    [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,2,2,2,2,1,1,1,1,1,1,2,2,2,2,1],
+    [1,2,2,2,1,3,3,3,3,3,3,1,2,2,2,1],
+    [0,1,2,2,1,3,3,3,3,3,3,1,2,2,1,0],
+    [0,1,2,2,1,3,3,3,3,3,3,1,2,2,1,0],
+    [0,0,1,2,1,3,3,3,3,3,3,1,2,1,0,0],
+    [0,0,0,1,1,3,3,3,3,3,3,1,1,0,0,0],
+    [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+    [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+]
+
+let onigiriPalette: [UInt8: (r: CGFloat, g: CGFloat, b: CGFloat)] = [
+    1: (0.15, 0.12, 0.10),  // dark outline
+    2: (0.95, 0.93, 0.88),  // white rice
+    3: (0.10, 0.20, 0.12),  // nori seaweed
+    4: (1.00, 1.00, 0.98),  // highlight
+]
 
 func renderIcon(pixelSize: Int) -> NSImage {
     let s = CGFloat(pixelSize)
@@ -45,78 +73,35 @@ func renderIcon(pixelSize: Int) -> NSImage {
     ctx.setLineWidth(s * 0.008)
     ctx.strokePath()
 
-    // --- Draw shield + lock shape ---
+    // --- Draw pixel art onigiri ---
     ctx.saveGState()
 
-    // Center the drawing
-    let iconScale = s * 0.0045
-    let iconW = 100 * iconScale  // roughly 100 units wide
-    let iconH = 130 * iconScale  // roughly 130 units tall
-    let offsetX = (s - iconW) / 2
-    let offsetY = (s - iconH) / 2 - s * 0.02
+    // Clip to rounded rect so pixels don't bleed outside
+    ctx.addPath(bgPath)
+    ctx.clip()
 
-    ctx.translateBy(x: offsetX, y: offsetY)
-    ctx.scaleBy(x: iconScale, y: iconScale)
+    let rows = onigiriGrid.count
+    let cols = onigiriGrid[0].count
+    let padding = s * 0.12
+    let availableSize = s - padding * 2
+    let pixelSize_ = availableSize / CGFloat(max(rows, cols))
 
-    // Shield outline (pointed at bottom)
-    ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 0.92))
-    let shield = CGMutablePath()
-    shield.move(to: CGPoint(x: 50, y: 130))      // top center
-    shield.addCurve(to: CGPoint(x: 5, y: 100),    // top-left
-                    control1: CGPoint(x: 25, y: 128),
-                    control2: CGPoint(x: 5, y: 115))
-    shield.addLine(to: CGPoint(x: 5, y: 50))      // left side
-    shield.addCurve(to: CGPoint(x: 50, y: 0),      // bottom point
-                    control1: CGPoint(x: 5, y: 20),
-                    control2: CGPoint(x: 30, y: 5))
-    shield.addCurve(to: CGPoint(x: 95, y: 50),     // right side
-                    control1: CGPoint(x: 70, y: 5),
-                    control2: CGPoint(x: 95, y: 20))
-    shield.addLine(to: CGPoint(x: 95, y: 100))     // right top
-    shield.addCurve(to: CGPoint(x: 50, y: 130),    // back to top center
-                    control1: CGPoint(x: 95, y: 115),
-                    control2: CGPoint(x: 75, y: 128))
-    shield.closeSubpath()
-    ctx.addPath(shield)
-    ctx.fillPath()
+    let gridW = CGFloat(cols) * pixelSize_
+    let gridH = CGFloat(rows) * pixelSize_
+    let originX = (s - gridW) / 2
+    let originY = (s - gridH) / 2
 
-    // Lock body (dark rectangle on the shield)
-    let lockBodyColor = CGColor(red: 0.08, green: 0.08, blue: 0.14, alpha: 1.0)
-    ctx.setFillColor(lockBodyColor)
-    let bodyW: CGFloat = 40
-    let bodyH: CGFloat = 30
-    let bodyX: CGFloat = 50 - bodyW/2
-    let bodyY: CGFloat = 40
-    let bodyPath = CGPath(roundedRect: CGRect(x: bodyX, y: bodyY, width: bodyW, height: bodyH),
-                          cornerWidth: 4, cornerHeight: 4, transform: nil)
-    ctx.addPath(bodyPath)
-    ctx.fillPath()
-
-    // Lock shackle (dark arc above the body)
-    ctx.setStrokeColor(lockBodyColor)
-    ctx.setLineWidth(7)
-    ctx.setLineCap(.round)
-    let shackleCenter = CGPoint(x: 50, y: bodyY + bodyH)
-    let shackleRadius: CGFloat = 14
-    ctx.addArc(center: shackleCenter, radius: shackleRadius,
-               startAngle: 0, endAngle: .pi, clockwise: false)
-    ctx.strokePath()
-
-    // Keyhole (small white circle + triangle)
-    ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 0.92))
-    let keyholeCenter = CGPoint(x: 50, y: 55)
-    ctx.addArc(center: keyholeCenter, radius: 4, startAngle: 0, endAngle: 2 * .pi, clockwise: false)
-    ctx.fillPath()
-
-    // Keyhole slot
-    let slot = CGMutablePath()
-    slot.move(to: CGPoint(x: 48, y: 54))
-    slot.addLine(to: CGPoint(x: 52, y: 54))
-    slot.addLine(to: CGPoint(x: 51, y: 44))
-    slot.addLine(to: CGPoint(x: 49, y: 44))
-    slot.closeSubpath()
-    ctx.addPath(slot)
-    ctx.fillPath()
+    for row in 0..<rows {
+        for col in 0..<cols {
+            let value = onigiriGrid[row][col]
+            guard value != 0, let color = onigiriPalette[value] else { continue }
+            ctx.setFillColor(CGColor(red: color.r, green: color.g, blue: color.b, alpha: 1.0))
+            // Flip Y: row 0 is top of the grid, but CoreGraphics Y goes up
+            let x = originX + CGFloat(col) * pixelSize_
+            let y = originY + CGFloat(rows - 1 - row) * pixelSize_
+            ctx.fill(CGRect(x: x, y: y, width: pixelSize_ + 0.5, height: pixelSize_ + 0.5))
+        }
+    }
 
     ctx.restoreGState()
 
