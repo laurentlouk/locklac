@@ -129,6 +129,15 @@ public final class OverlayWindowController {
         error.isHidden = true
         view.addSubview(error)
         errorLabel = error
+
+        if BiometricAuth.isAvailable {
+            let touchIdHint = NSTextField(labelWithString: "or use Touch ID")
+            touchIdHint.font = NSFont.systemFont(ofSize: 12)
+            touchIdHint.alignment = .center
+            touchIdHint.frame = NSRect(x: centerX - 100, y: centerY - 100, width: 200, height: 18)
+            touchIdHint.textColor = NSColor.white.withAlphaComponent(0.5)
+            view.addSubview(touchIdHint)
+        }
     }
 
     @objc private func passwordSubmitted() {

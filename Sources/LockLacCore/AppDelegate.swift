@@ -127,6 +127,17 @@ extension AppDelegate: LockControllerDelegate {
             let center = CGPoint(x: screen.frame.midX, y: screen.frame.midY)
             CGWarpMouseCursorPosition(center)
         }
+
+        attemptBiometricUnlock()
+    }
+
+    private func attemptBiometricUnlock() {
+        BiometricAuth.authenticate(reason: "Unlock lockLac") { [weak self] success in
+            guard let self, self.lockController.state == .locked else { return }
+            if success {
+                self.lockController.forceUnlock()
+            }
+        }
     }
 
     public func lockControllerDidUnlock() {
