@@ -51,11 +51,11 @@ func renderIcon(pixelSize: Int) -> NSImage {
     ctx.addPath(bgPath)
     ctx.clip()
 
-    // Gradient: dark navy top to darker bottom
+    // Gradient: dark grey top to darker grey bottom
     let colorSpace = CGColorSpaceCreateDeviceRGB()
     let colors = [
-        CGColor(red: 0.12, green: 0.12, blue: 0.20, alpha: 1.0),
-        CGColor(red: 0.05, green: 0.05, blue: 0.10, alpha: 1.0),
+        CGColor(red: 0.16, green: 0.16, blue: 0.16, alpha: 1.0),
+        CGColor(red: 0.08, green: 0.08, blue: 0.08, alpha: 1.0),
     ] as CFArray
     if let gradient = CGGradient(colorsSpace: colorSpace, colors: colors, locations: [0.0, 1.0]) {
         ctx.drawLinearGradient(gradient,
