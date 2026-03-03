@@ -25,7 +25,10 @@ swift build -c release
 # Or build the .app bundle:
 bash scripts/package-app.sh
 cp -R lockLac.app /Applications/
+xattr -d com.apple.quarantine /Applications/lockLac.app
 ```
+
+> **Note:** The `xattr` command removes the macOS Gatekeeper quarantine flag. This is needed because the app is not signed with an Apple Developer ID. The Homebrew Cask install handles this automatically.
 
 ## Requirements
 
