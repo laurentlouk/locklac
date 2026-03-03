@@ -1,4 +1,5 @@
 import AppKit
+import LocalAuthentication
 
 public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
@@ -7,6 +8,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private let passwordStore = PasswordStore()
     private let socketServer = SocketServer()
     private let eventTap = EventTap()
+    private var biometricContext: LAContext?
+    public var debugMode = false
 
     public override init() {
         super.init()
@@ -22,6 +25,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
+        if !passwordStore.hasPassword {
+            requirePassword()
+        }
     }
 
     private func setupMenuBar() {
@@ -41,9 +47,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc public func lockAction() {
         if !passwordStore.hasPassword {
-            promptSetPassword { [weak self] in
-                self?.performLock()
-            }
+            promptSetPassword { [weak self] in self?.performLock() }
             return
         }
         performLock()
@@ -54,7 +58,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func changePasswordAction() {
-        promptSetPassword(completion: nil)
+        promptSetPassword()
     }
 
     @objc private func quitAction() {
@@ -64,29 +68,71 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.terminate(nil)
     }
 
-    private func promptSetPassword(completion: (() -> Void)?) {
+    /// Loops until the user sets a password. Used on first launch.
+    private func requirePassword() {
+        while !passwordStore.hasPassword {
+            let didSet = promptSetPassword()
+            if !didSet {
+                let alert = NSAlert()
+                alert.messageText = "Password Required"
+                alert.informativeText = "lockLac requires a password to function. Please set one."
+                alert.addButton(withTitle: "OK")
+                alert.runModal()
+            }
+        }
+    }
+
+    /// Returns true if password was successfully set.
+    @discardableResult
+    private func promptSetPassword(completion: (() -> Void)? = nil) -> Bool {
         let alert = NSAlert()
         alert.messageText = "Set lockLac Password"
         alert.informativeText = "Enter a password to use for locking:"
         alert.addButton(withTitle: "Set Password")
         alert.addButton(withTitle: "Cancel")
 
-        let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 260, height: 54))
+
+        let field = NSSecureTextField(frame: NSRect(x: 0, y: 30, width: 260, height: 24))
         field.placeholderString = "Password"
-        alert.accessoryView = field
+        container.addSubview(field)
+
+        let confirmField = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
+        confirmField.placeholderString = "Confirm password"
+        container.addSubview(confirmField)
+
+        alert.accessoryView = container
 
         let response = alert.runModal()
-        if response == .alertFirstButtonReturn, !field.stringValue.isEmpty {
-            do {
-                try passwordStore.setPassword(field.stringValue)
-                completion?()
-            } catch {
-                let errAlert = NSAlert()
-                errAlert.messageText = "Error"
-                errAlert.informativeText = "Failed to save password: \(error.localizedDescription)"
-                errAlert.runModal()
-            }
+        guard response == .alertFirstButtonReturn else { return false }
+
+        let password = field.stringValue
+        let confirm = confirmField.stringValue
+
+        if password.isEmpty {
+            showErrorAlert("Password cannot be empty.")
+            return false
         }
+        if password != confirm {
+            showErrorAlert("Passwords do not match.")
+            return false
+        }
+
+        do {
+            try passwordStore.setPassword(password)
+            completion?()
+            return true
+        } catch {
+            showErrorAlert("Failed to save password: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    private func showErrorAlert(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = "Error"
+        alert.informativeText = message
+        alert.runModal()
     }
 
     public func applicationWillTerminate(_ notification: Notification) {
@@ -99,6 +145,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: LockControllerDelegate {
     public func lockControllerDidLock() {
+        overlayController.onPasswordFieldFocusChanged = { [weak self] focused in
+            self?.eventTap.keyboardPassthrough = focused
+        }
         overlayController.show()
 
         let started = eventTap.start()
@@ -111,7 +160,12 @@ extension AppDelegate: LockControllerDelegate {
             return
         }
 
-        eventTap.onKeyEvent = { _, _ in
+        eventTap.onKeyEvent = { [weak self] keyCode, _ in
+            // ESC (keyCode 53) unlocks in debug mode
+            if self?.debugMode == true, keyCode == 53 {
+                self?.lockController.forceUnlock()
+                return false
+            }
             return true
         }
 
@@ -132,15 +186,27 @@ extension AppDelegate: LockControllerDelegate {
     }
 
     private func attemptBiometricUnlock() {
-        BiometricAuth.authenticate(reason: "Unlock lockLac") { [weak self] success in
+        guard lockController.state == .locked else { return }
+        biometricContext = BiometricAuth.authenticate(reason: "Unlock lockLac") { [weak self] success in
             guard let self, self.lockController.state == .locked else { return }
             if success {
                 self.lockController.forceUnlock()
+            } else {
+                // Re-prompt Touch ID after a short delay so it's always available
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+                    self?.attemptBiometricUnlock()
+                }
             }
         }
     }
 
+    private func cancelBiometricAuth() {
+        biometricContext?.invalidate()
+        biometricContext = nil
+    }
+
     public func lockControllerDidUnlock() {
+        cancelBiometricAuth()
         eventTap.stop()
         overlayController.hide()
         socketServer.stop()
@@ -149,6 +215,7 @@ extension AppDelegate: LockControllerDelegate {
     public func lockControllerPasswordIncorrect() {
         overlayController.showError("Incorrect password")
         overlayController.clearPasswordField()
+        overlayController.refocusPasswordField()
     }
 }
 

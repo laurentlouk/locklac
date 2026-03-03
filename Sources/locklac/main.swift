@@ -50,6 +50,7 @@ if args.contains("--help") {
       locklac lock         Start the app and immediately lock
       locklac set-password Set or change the lock password
       locklac --unlock     Unlock a running instance (for SSH)
+      locklac --debug      Enable debug mode (ESC key unlocks)
       locklac --version    Print version
       locklac --help       Print this help
     """)
@@ -60,6 +61,9 @@ if args.contains("--help") {
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
 let delegate = AppDelegate()
+if args.contains("--debug") {
+    delegate.debugMode = true
+}
 app.delegate = delegate
 
 if args.contains("lock") {

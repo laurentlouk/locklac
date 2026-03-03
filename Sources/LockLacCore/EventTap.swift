@@ -7,6 +7,9 @@ public final class EventTap {
     private var runLoopSource: CFRunLoopSource?
     private var enabled = false
 
+    /// When false, all keyboard events are suppressed (password field unfocused).
+    public var keyboardPassthrough = true
+
     /// Callback invoked with keyboard events (keyDown) while locked.
     /// Return true to allow the event through, false to suppress.
     public var onKeyEvent: ((_ keyCode: UInt16, _ flags: CGEventFlags) -> Bool)?
@@ -64,8 +67,9 @@ public final class EventTap {
             return Unmanaged.passRetained(event)
         }
 
-        // Allow all keyboard events through to the password field
+        // Allow keyboard events through only when password field is focused
         if type == .keyDown || type == .keyUp || type == .flagsChanged {
+            guard keyboardPassthrough else { return nil }
             if type == .keyDown, let onKeyEvent {
                 let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
                 let flags = event.flags
@@ -76,7 +80,14 @@ public final class EventTap {
             return Unmanaged.passRetained(event)
         }
 
-        // Suppress everything else (mouse, scroll, gestures, etc.)
+        // Allow mouse events through so the user can click on the password field.
+        // The overlay covers the entire screen, so clicks can only land on it.
+        if type == .leftMouseDown || type == .leftMouseUp
+            || type == .mouseMoved || type == .leftMouseDragged {
+            return Unmanaged.passRetained(event)
+        }
+
+        // Suppress everything else (right-click, scroll, gestures, etc.)
         return nil
     }
 }

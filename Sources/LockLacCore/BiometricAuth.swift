@@ -7,14 +7,16 @@ public final class BiometricAuth {
         return context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
     }
 
-    public static func authenticate(reason: String, completion: @escaping (Bool) -> Void) {
+    /// Returns the LAContext so the caller can call `invalidate()` to dismiss the dialog.
+    @discardableResult
+    public static func authenticate(reason: String, completion: @escaping (Bool) -> Void) -> LAContext? {
         let context = LAContext()
         context.localizedFallbackTitle = "" // hide "Enter Password" — we have our own
 
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
             completion(false)
-            return
+            return nil
         }
 
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, _ in
@@ -22,5 +24,6 @@ public final class BiometricAuth {
                 completion(success)
             }
         }
+        return context
     }
 }

@@ -10,6 +10,9 @@ public final class OverlayWindowController {
     private var errorLabel: NSTextField?
     public weak var delegate: OverlayWindowDelegate?
 
+    /// Called when the password field gains or loses focus (true = focused).
+    public var onPasswordFieldFocusChanged: ((Bool) -> Void)?
+
     public init() {}
 
     public func show() {
@@ -19,12 +22,17 @@ public final class OverlayWindowController {
             window.makeKeyAndOrderFront(nil)
         }
 
+        refocusPasswordField()
+    }
+
+    public func refocusPasswordField() {
+        // Skip if password field already has focus (has an active field editor)
+        if passwordField?.currentEditor() != nil { return }
+        NSApplication.shared.activate(ignoringOtherApps: true)
         if let primaryWindow = windows.first {
-            primaryWindow.makeKey()
+            primaryWindow.makeKeyAndOrderFront(nil)
             passwordField?.becomeFirstResponder()
         }
-
-        NSCursor.hide()
     }
 
     public func hide() {
@@ -34,7 +42,6 @@ public final class OverlayWindowController {
         windows.removeAll()
         passwordField = nil
         errorLabel = nil
-        NSCursor.unhide()
     }
 
     public func showError(_ message: String) {
@@ -54,7 +61,7 @@ public final class OverlayWindowController {
     // MARK: - Private
 
     private func createOverlayWindow(for screen: NSScreen) -> NSWindow {
-        let window = NSWindow(
+        let window = KeyableWindow(
             contentRect: screen.frame,
             styleMask: .borderless,
             backing: .buffered,
@@ -86,6 +93,10 @@ public final class OverlayWindowController {
 
         if screen == NSScreen.main {
             addPasswordUI(to: contentView, frame: screen.frame)
+            window.passwordField = passwordField
+            window.onFirstResponderChanged = { [weak self] focused in
+                self?.onPasswordFieldFocusChanged?(focused)
+            }
         }
 
         window.contentView = contentView
@@ -106,10 +117,13 @@ public final class OverlayWindowController {
         ))
         view.addSubview(pixelArt)
 
-        let titleLabel = NSTextField(labelWithString: "lockLac")
+        let foodEmojis = ["🍙", "🍕", "🍣", "🍜", "🍩", "🍔", "🌮", "🍦", "🧁", "🍡",
+                          "🥟", "🍰", "🍪", "🥐", "🍿", "🥯", "🍱", "🫕", "🥮", "🍘"]
+        let randomEmoji = foodEmojis.randomElement()!
+        let titleLabel = NSTextField(labelWithString: "LockLac \(randomEmoji)")
         titleLabel.font = NSFont.systemFont(ofSize: 24, weight: .light)
         titleLabel.alignment = .center
-        titleLabel.frame = NSRect(x: centerX - 100, y: centerY + 5, width: 200, height: 30)
+        titleLabel.frame = NSRect(x: centerX - 120, y: centerY + 5, width: 240, height: 30)
         titleLabel.textColor = NSColor.white.withAlphaComponent(0.8)
         view.addSubview(titleLabel)
 
@@ -150,10 +164,42 @@ public final class OverlayWindowController {
 
     private func shakePasswordField() {
         guard let field = passwordField else { return }
-        let animation = CAKeyframeAnimation(keyPath: "position.x")
-        animation.values = [0, -10, 10, -10, 10, -5, 5, 0].map { field.frame.midX + $0 }
-        animation.duration = 0.4
+        field.wantsLayer = true
+        let animation = CAKeyframeAnimation(keyPath: "transform.translation.x")
+        animation.values = [0, -6, 5, -4, 3, 0]
+        animation.duration = 0.3
+        animation.isAdditive = true
         field.layer?.add(animation, forKey: "shake")
+    }
+}
+
+// MARK: - KeyableWindow
+
+private final class KeyableWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+
+    weak var passwordField: NSView?
+    var onFirstResponderChanged: ((Bool) -> Void)?
+
+    override func sendEvent(_ event: NSEvent) {
+        // Click outside the password field → unfocus it
+        if event.type == .leftMouseDown,
+           let passwordField = passwordField,
+           let superview = passwordField.superview {
+            let localPoint = superview.convert(event.locationInWindow, from: nil)
+            if !passwordField.frame.contains(localPoint) {
+                _ = makeFirstResponder(nil)
+            }
+        }
+        super.sendEvent(event)
+    }
+
+    override func makeFirstResponder(_ responder: NSResponder?) -> Bool {
+        let result = super.makeFirstResponder(responder)
+        let isFocused = (passwordField as? NSTextField)?.currentEditor() != nil
+        onFirstResponderChanged?(isFocused)
+        return result
     }
 }
 

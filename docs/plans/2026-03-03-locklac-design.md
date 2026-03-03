@@ -1,11 +1,11 @@
-# clawLock — Design Document
+# lockLac — Design Document
 
 **Date:** 2026-03-03
 **Status:** Approved
 
 ## Summary
 
-clawLock is a macOS menu bar app (pure Swift) that locks the machine with a fullscreen dark overlay. It traps all mouse and keyboard input globally and only unlocks when the correct password is entered. Background processes continue running — the purpose is to prevent physical access while long-running CPU tasks (AI training, builds, servers) execute.
+lockLac is a macOS menu bar app (pure Swift) that locks the machine with a fullscreen dark overlay. It traps all mouse and keyboard input globally and only unlocks when the correct password is entered. Background processes continue running — the purpose is to prevent physical access while long-running CPU tasks (AI training, builds, servers) execute.
 
 ## Decisions
 
@@ -14,29 +14,29 @@ clawLock is a macOS menu bar app (pure Swift) that locks the machine with a full
 | Language | Pure Swift | Native AppKit access, no FFI complexity |
 | UI approach | Fullscreen overlay (AppKit) | Covers entire screen, most secure visually |
 | App type | Menu bar agent (LSUIElement) | No Dock icon, unobtrusive, always available |
-| Password storage | Stored hash in config file | `~/.clawlock/config.json` with argon2id |
+| Password storage | Stored hash in config file | `~/.locklac/config.json` with argon2id |
 | Input blocking | Block everything | CGEvent tap suppresses all shortcuts including Cmd+Tab, Cmd+Space, Force Quit |
 | Visual style | Minimal dark overlay | Semi-transparent dark + blur + centered password field |
-| Safety escape | SSH kill switch | `clawlock --unlock` via Unix domain socket, or process kill |
+| Safety escape | SSH kill switch | `locklac --unlock` via Unix domain socket, or process kill |
 
 ## Architecture
 
 ### Package Structure
 
 ```
-clawLock/
+lockLac/
 ├── Package.swift
 ├── Sources/
-│   ├── ClawLockCore/              # library target (testable)
+│   ├── LockLacCore/              # library target (testable)
 │   │   ├── EventTap.swift         # CGEvent tap: intercept all mouse + keyboard
 │   │   ├── OverlayWindow.swift    # NSWindow (screenSaver+1, borderless, all screens)
 │   │   ├── PasswordStore.swift    # argon2id hash read/write
 │   │   ├── LockController.swift   # state machine: idle → locked → unlocking
 │   │   └── SocketServer.swift     # Unix domain socket for SSH kill switch
-│   └── clawlock/                  # executable target
+│   └── locklac/                  # executable target
 │       └── main.swift             # CLI args + NSApplication + menu bar setup
 └── Tests/
-    └── ClawLockCoreTests/
+    └── LockLacCoreTests/
 ```
 
 ### Subsystems
@@ -67,7 +67,7 @@ clawLock/
 - Requires Accessibility permission — app should prompt on first launch
 
 #### 4. Password Store
-- Location: `~/.clawlock/config.json`
+- Location: `~/.locklac/config.json`
 - Format:
   ```json
   {
@@ -81,16 +81,16 @@ clawLock/
 - If no config exists, prompt user to set a password before first lock
 
 #### 5. SSH Kill Switch
-- Unix domain socket at `/tmp/clawlock.sock`
+- Unix domain socket at `/tmp/locklac.sock`
 - SocketServer listens for unlock commands while locked
-- CLI: `clawlock --unlock` connects to socket, sends unlock signal
-- Also: plain `kill` / `killall clawlock` works (event tap dies with process, overlay disappears)
+- CLI: `locklac --unlock` connects to socket, sends unlock signal
+- Also: plain `kill` / `killall locklac` works (event tap dies with process, overlay disappears)
 - Socket is removed on clean exit
 
 ### Lock Flow
 
 ```
-User clicks "Lock" in menu bar (or runs `clawlock lock`)
+User clicks "Lock" in menu bar (or runs `locklac lock`)
   │
   ├→ LockController transitions: idle → locked
   ├→ OverlayWindow.show() — spawn borderless windows on all screens
@@ -112,9 +112,9 @@ User clicks "Lock" in menu bar (or runs `clawlock lock`)
 ### Unlock via SSH
 
 ```
-Remote session: `clawlock --unlock`
+Remote session: `locklac --unlock`
   │
-  ├→ Connects to /tmp/clawlock.sock
+  ├→ Connects to /tmp/locklac.sock
   ├→ Sends unlock command
   │
   └→ SocketServer receives command
@@ -134,5 +134,5 @@ Remote session: `clawlock --unlock`
 - Password never stored in plaintext — argon2id only
 - Event tap runs at session level, not process level — covers all apps
 - Overlay at `.screenSaver + 1` is above Notification Center, Spotlight, etc.
-- Socket at `/tmp/clawlock.sock` has owner-only permissions (0600)
+- Socket at `/tmp/locklac.sock` has owner-only permissions (0600)
 - No timeout on lock — stays locked until password or kill
