@@ -64,15 +64,19 @@ public final class EventTap {
             return Unmanaged.passRetained(event)
         }
 
-        if type == .keyDown, let onKeyEvent {
-            let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-            let flags = event.flags
-            if onKeyEvent(keyCode, flags) {
-                return Unmanaged.passRetained(event)
+        // Allow all keyboard events through to the password field
+        if type == .keyDown || type == .keyUp || type == .flagsChanged {
+            if type == .keyDown, let onKeyEvent {
+                let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+                let flags = event.flags
+                if !onKeyEvent(keyCode, flags) {
+                    return nil
+                }
             }
+            return Unmanaged.passRetained(event)
         }
 
-        // Suppress everything else
+        // Suppress everything else (mouse, scroll, gestures, etc.)
         return nil
     }
 }
