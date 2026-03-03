@@ -80,7 +80,7 @@ public final class OverlayWindowController {
 
         let tintView = NSView(frame: screen.frame)
         tintView.wantsLayer = true
-        tintView.layer?.backgroundColor = NSColor(white: 0, alpha: 0.5).cgColor
+        tintView.layer?.backgroundColor = NSColor(white: 0, alpha: 0.3).cgColor
         tintView.autoresizingMask = [.width, .height]
         contentView.addSubview(tintView)
 
@@ -96,12 +96,15 @@ public final class OverlayWindowController {
         let centerX = frame.midX
         let centerY = frame.midY
 
-        let lockLabel = NSTextField(labelWithString: "\u{1F512}")
-        lockLabel.font = NSFont.systemFont(ofSize: 48)
-        lockLabel.alignment = .center
-        lockLabel.frame = NSRect(x: centerX - 30, y: centerY + 40, width: 60, height: 60)
-        lockLabel.textColor = .white
-        view.addSubview(lockLabel)
+        // Pixel art food ball
+        let pixelArtSize: CGFloat = 120
+        let pixelArt = PixelArtView(frame: NSRect(
+            x: centerX - pixelArtSize / 2,
+            y: centerY + 30,
+            width: pixelArtSize,
+            height: pixelArtSize
+        ))
+        view.addSubview(pixelArt)
 
         let titleLabel = NSTextField(labelWithString: "lockLac")
         titleLabel.font = NSFont.systemFont(ofSize: 24, weight: .light)
@@ -151,5 +154,61 @@ public final class OverlayWindowController {
         animation.values = [0, -10, 10, -10, 10, -5, 5, 0].map { field.frame.midX + $0 }
         animation.duration = 0.4
         field.layer?.add(animation, forKey: "shake")
+    }
+}
+
+// MARK: - Pixel Art Food Ball
+
+private final class PixelArtView: NSView {
+    // 16x16 pixel art: onigiri rice ball
+    // 0 = transparent, 1 = dark outline, 2 = white rice, 3 = nori (seaweed), 4 = highlight
+    private static let grid: [[UInt8]] = [
+        [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+        [0,0,0,0,1,1,2,2,2,2,1,1,0,0,0,0],
+        [0,0,0,1,2,2,4,4,2,2,2,2,1,0,0,0],
+        [0,0,1,2,2,4,4,2,2,2,2,2,2,1,0,0],
+        [0,1,2,2,2,4,2,2,2,2,2,2,2,2,1,0],
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,2,2,2,1,1,1,1,1,1,2,2,2,2,1],
+        [1,2,2,2,1,3,3,3,3,3,3,1,2,2,2,1],
+        [0,1,2,2,1,3,3,3,3,3,3,1,2,2,1,0],
+        [0,1,2,2,1,3,3,3,3,3,3,1,2,2,1,0],
+        [0,0,1,2,1,3,3,3,3,3,3,1,2,1,0,0],
+        [0,0,0,1,1,3,3,3,3,3,3,1,1,0,0,0],
+        [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+        [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+    ]
+
+    private static let palette: [UInt8: NSColor] = [
+        0: .clear,
+        1: NSColor(red: 0.15, green: 0.12, blue: 0.10, alpha: 1.0),  // dark outline
+        2: NSColor(red: 0.95, green: 0.93, blue: 0.88, alpha: 1.0),  // white rice
+        3: NSColor(red: 0.10, green: 0.20, blue: 0.12, alpha: 1.0),  // nori seaweed
+        4: NSColor(red: 1.00, green: 1.00, blue: 0.98, alpha: 1.0),  // highlight
+    ]
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        let rows = Self.grid.count
+        let cols = Self.grid[0].count
+        let pixelW = bounds.width / CGFloat(cols)
+        let pixelH = bounds.height / CGFloat(rows)
+
+        for row in 0..<rows {
+            for col in 0..<cols {
+                let value = Self.grid[rows - 1 - row][col] // flip Y for AppKit coords
+                guard let color = Self.palette[value], value != 0 else { continue }
+                color.setFill()
+                let rect = NSRect(
+                    x: CGFloat(col) * pixelW,
+                    y: CGFloat(row) * pixelH,
+                    width: pixelW + 0.5, // slight overlap to avoid gaps
+                    height: pixelH + 0.5
+                )
+                rect.fill()
+            }
+        }
     }
 }
