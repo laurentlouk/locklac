@@ -1,31 +1,40 @@
-# lockLac
+# LockLac
 
 A macOS menu bar app that locks your screen with a fullscreen dark overlay while background processes keep running. Traps all keyboard and mouse input — only unlocks with the correct password or Touch ID.
+
+## Install
+
+### Homebrew (recommended)
+
+```sh
+brew tap laurentlouk/locklac
+brew install locklac
+```
+
+### Build from source
+
+Requires macOS 13+ (Ventura), Swift 5.9+ / Xcode 15+.
+
+```sh
+git clone https://github.com/laurentlouk/locklac.git
+cd locklac
+swift build -c release
+# Binary is at .build/release/locklac
+```
 
 ## Requirements
 
 - macOS 13+ (Ventura)
-- Swift 5.9+ / Xcode 15+
 - Accessibility permission (System Settings → Privacy & Security → Accessibility)
-
-## Build
-
-```sh
-swift build                # debug build
-swift build -c release     # optimized release build
-```
 
 ## Run
 
 ```sh
-# Set your lock password (required before first lock)
-swift run locklac set-password
-
-# Start the menu bar app
-swift run locklac
+# Start the menu bar app (prompts for password on first launch)
+locklac
 
 # Start and lock immediately
-swift run locklac lock
+locklac lock
 ```
 
 A lock shield icon appears in the menu bar. Click it to **Lock**, **Change Password**, or **Quit**.
@@ -34,7 +43,7 @@ A lock shield icon appears in the menu bar. Click it to **Lock**, **Change Passw
 
 - **Password:** Type your password into the overlay and press Enter
 - **Touch ID:** Prompted automatically on Macs with Touch ID
-- **SSH kill switch:** `swift run locklac --unlock` from another terminal
+- **SSH kill switch:** `locklac --unlock` from another terminal
 - **Force kill:** `killall locklac`
 
 ## Test
