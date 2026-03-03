@@ -1,0 +1,44 @@
+{
+  "configurations": [
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:lockLac}/.worktrees/implement-locklac",
+      "name": "Debug locklac (.worktrees/implement-locklac)",
+      "target": "locklac",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug locklac (.worktrees/implement-locklac)"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:lockLac}/.worktrees/implement-locklac",
+      "name": "Release locklac (.worktrees/implement-locklac)",
+      "target": "locklac",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release locklac (.worktrees/implement-locklac)"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:lockLac}",
+      "name": "Debug locklac",
+      "target": "locklac",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug locklac"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:lockLac}",
+      "name": "Release locklac",
+      "target": "locklac",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release locklac"
+    }
+  ]
+}
