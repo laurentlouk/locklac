@@ -35,6 +35,24 @@ xattr -d com.apple.quarantine /Applications/lockLac.app
 - macOS 13+ (Ventura)
 - Accessibility permission (System Settings → Privacy & Security → Accessibility)
 
+## Authorization
+
+On first launch, macOS may block the app because it is not signed with an Apple Developer ID. To authorize it:
+
+1. **Remove the Gatekeeper quarantine flag:**
+
+   ```sh
+   xattr -d com.apple.quarantine /Applications/lockLac.app
+   ```
+
+2. **Grant Accessibility permission:**
+
+   Go to **System Settings → Privacy & Security → Accessibility** and enable **lockLac**.
+
+   This is required for the app to intercept keyboard and mouse input while locked.
+
+> **Tip:** If you installed via Homebrew Cask, step 1 is handled automatically.
+
 ## Run
 
 ```sh
