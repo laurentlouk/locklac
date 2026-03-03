@@ -1,5 +1,5 @@
 import Foundation
 
 public enum LockLacCore {
-    public static let version = "0.3.1"
+    public static let version = "0.4.0"
 }
